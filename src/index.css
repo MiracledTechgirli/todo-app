@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@theme {
+  --color-blush-50: #fff9fb;
+  --color-blush-100: #fdf1f5;
+  --color-blush-200: #fbe4ec;
+  --color-blush-300: #f6cbd9;
+  --color-blush-400: #efa9c2;
+  --color-petal-400: #e58aa8;
+  --color-petal-500: #d56a90;
+  --color-petal-600: #b74e75;
+  --color-petal-700: #8e3a5b;
+  --color-plum-900: #4e2433;
+  --color-plum-700: #71404f;
+  --color-plum-500: #9a6e7c;
+  --color-plum-400: #b795a1;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Inter", "Segoe UI", Roboto, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html, body {
+  background-color: var(--color-blush-100);
+  color: var(--color-plum-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  background-image:
+    radial-gradient(var(--color-blush-300) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* visible focus for a11y */
+:focus-visible {
+  outline: 2px solid var(--color-petal-600);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* soft pink card */
+.blush-card {
+  background-color: var(--color-blush-50);
+  border: 1px solid var(--color-blush-300);
+  box-shadow: 0 1px 0 var(--color-blush-200), 0 8px 24px -16px rgb(142 58 91 / 0.35);
+}
+
+.dragging-card {
+  box-shadow: 0 12px 32px -12px rgb(142 58 91 / 0.5);
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
