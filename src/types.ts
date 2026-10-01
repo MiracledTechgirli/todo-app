@@ -1,3 +1,7 @@
+export type Priority = "low" | "medium" | "high";
+export type Category = "Personal" | "Work" | "Shopping" | "Ideas" | "Health" | "General";
+export type SortOption = "manual" | "dueDate" | "priority" | "createdAt";
+
 export interface SubTask {
   id: string;
   title: string;
@@ -13,6 +17,10 @@ export interface Todo {
   done: boolean;
   createdAt: number;
   subtasks: SubTask[];
+  priority?: Priority;
+  dueDate?: string;
+  category?: Category;
+  pinned?: boolean;
 }
 
 export type Filter = "all" | "active" | "done";
@@ -20,3 +28,4 @@ export type Filter = "all" | "active" | "done";
 export function uid(prefix = "id"): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36)}`;
 }
+

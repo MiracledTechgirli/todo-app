@@ -171,3 +171,29 @@ test("a11y: labels, roles, focus, headings", async ({ page }) => {
   });
   expect(["add-todo", "new-todo-desc", "BUTTON", "TEXTAREA"]).toContain(focused);
 });
+
+test("new features: priority, category, search, and pinning", async ({ page }) => {
+  // CREATE with priority and category
+  await page.getByTestId("new-todo-title").fill("Gym workout");
+  await page.getByTestId("category-select-health").click();
+  await page.getByTestId("priority-select-high").click();
+  await page.getByTestId("add-todo").click();
+
+  const card = page.getByTestId("todo-list").locator("li", { hasText: "Gym workout" });
+  await expect(card).toBeVisible();
+  await expect(card.getByText("Health")).toBeVisible();
+  await expect(card.getByText("high")).toBeVisible();
+
+  // SEARCH filtering
+  await page.getByTestId("search-input").fill("Gym");
+  await expect(page.getByTestId("todo-list").locator("li")).toHaveCount(1);
+  await page.getByTestId("search-input").fill("nonexistentquery123");
+  await expect(page.getByTestId("empty-state")).toBeVisible();
+  await page.getByTestId("search-input").fill("");
+
+  // PINNING
+  const id = (await card.getAttribute("data-testid"))!.replace("todo-", "");
+  await page.getByTestId(`pin-${id}`).click();
+  await expect(card.getByText("📌 Pinned")).toBeVisible();
+});
+

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { uid, type Todo } from "../types";
+import { uid, type Todo, type Priority, type Category } from "../types";
 
 const STORAGE_KEY = "pink-todos-v1";
 
@@ -16,6 +16,9 @@ function load(): Todo[] {
 }
 
 function seed(): Todo[] {
+  const today = new Date().toISOString().split("T")[0];
+  const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
+
   return [
     {
       id: uid("todo"),
@@ -23,6 +26,10 @@ function seed(): Todo[] {
       description: "Keep it minimal — three things that matter.",
       done: false,
       createdAt: Date.now() - 3000,
+      priority: "high",
+      category: "Personal",
+      dueDate: today,
+      pinned: true,
       subtasks: [
         { id: uid("sub"), title: "Buy pink folders", done: false },
         { id: uid("sub"), title: "Sketch pink palette", done: true },
@@ -31,12 +38,22 @@ function seed(): Todo[] {
     {
       id: uid("todo"),
       title: "Read 20 pages",
-      description: "",
+      description: "Finish the current chapter on UI design.",
       done: false,
       createdAt: Date.now() - 2000,
+      priority: "medium",
+      category: "Ideas",
+      dueDate: nextWeek,
       subtasks: [],
     },
   ];
+}
+
+export interface AddTodoOptions {
+  priority?: Priority;
+  dueDate?: string;
+  category?: Category;
+  pinned?: boolean;
 }
 
 export function useTodos() {
@@ -50,37 +67,58 @@ export function useTodos() {
     }
   }, [todos]);
 
-  const addTodo = useCallback((title: string, description: string) => {
-    const t = title.trim();
-    if (!t) return null;
-    const todo: Todo = {
-      id: uid("todo"),
-      title: t.slice(0, 120),
-      description: description.trim().slice(0, 500),
-      done: false,
-      createdAt: Date.now(),
-      subtasks: [],
-    };
-    setTodos((prev) => [todo, ...prev]);
-    return todo;
-  }, []);
+  const addTodo = useCallback(
+    (title: string, description: string, options?: AddTodoOptions) => {
+      const t = title.trim();
+      if (!t) return null;
+      const todo: Todo = {
+        id: uid("todo"),
+        title: t.slice(0, 120),
+        description: description.trim().slice(0, 500),
+        done: false,
+        createdAt: Date.now(),
+        subtasks: [],
+        priority: options?.priority ?? "medium",
+        dueDate: options?.dueDate || undefined,
+        category: options?.category ?? "General",
+        pinned: options?.pinned ?? false,
+      };
+      setTodos((prev) => [todo, ...prev]);
+      return todo;
+    },
+    []
+  );
 
-  const updateTodo = useCallback((id: string, patch: Partial<Pick<Todo, "title" | "description">>) => {
-    setTodos((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              title: (patch.title ?? t.title).slice(0, 120),
-              description: (patch.description ?? t.description).slice(0, 500),
-            }
-          : t,
-      ),
-    );
-  }, []);
+  const updateTodo = useCallback(
+    (
+      id: string,
+      patch: Partial<Pick<Todo, "title" | "description" | "priority" | "dueDate" | "category" | "pinned">>
+    ) => {
+      setTodos((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                title: patch.title !== undefined ? patch.title.slice(0, 120) : t.title,
+                description: patch.description !== undefined ? patch.description.slice(0, 500) : t.description,
+                priority: patch.priority !== undefined ? patch.priority : t.priority,
+                dueDate: patch.dueDate !== undefined ? patch.dueDate : t.dueDate,
+                category: patch.category !== undefined ? patch.category : t.category,
+                pinned: patch.pinned !== undefined ? patch.pinned : t.pinned,
+              }
+            : t
+        )
+      );
+    },
+    []
+  );
 
   const toggleTodo = useCallback((id: string) => {
     setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+  }, []);
+
+  const togglePin = useCallback((id: string) => {
+    setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, pinned: !t.pinned } : t)));
   }, []);
 
   const deleteTodo = useCallback((id: string) => {
@@ -117,8 +155,8 @@ export function useTodos() {
                 { id: uid("sub"), title: t.slice(0, 120), done: false, description: description.slice(0, 300) || undefined },
               ],
             }
-          : todo,
-      ),
+          : todo
+      )
     );
   }, []);
 
@@ -130,8 +168,8 @@ export function useTodos() {
               ...todo,
               subtasks: todo.subtasks.map((s) => (s.id === subId ? { ...s, done: !s.done } : s)),
             }
-          : todo,
-      ),
+          : todo
+      )
     );
   }, []);
 
@@ -142,11 +180,11 @@ export function useTodos() {
           ? {
               ...todo,
               subtasks: todo.subtasks.map((s) =>
-                s.id === subId ? { ...s, title: title.slice(0, 120) } : s,
+                s.id === subId ? { ...s, title: title.slice(0, 120) } : s
               ),
             }
-          : todo,
-      ),
+          : todo
+      )
     );
   }, []);
 
@@ -155,9 +193,32 @@ export function useTodos() {
       prev.map((todo) =>
         todo.id === todoId
           ? { ...todo, subtasks: todo.subtasks.filter((s) => s.id !== subId) }
-          : todo,
-      ),
+          : todo
+      )
     );
+  }, []);
+
+  const exportTodos = useCallback(() => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(todos, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `pink-todos-export-${new Date().toISOString().split("T")[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }, [todos]);
+
+  const importTodos = useCallback((jsonData: string) => {
+    try {
+      const parsed = JSON.parse(jsonData);
+      if (Array.isArray(parsed)) {
+        setTodos(parsed);
+        return true;
+      }
+    } catch {
+      /* ignore invalid json */
+    }
+    return false;
   }, []);
 
   const stats = useMemo(() => {
@@ -172,6 +233,7 @@ export function useTodos() {
     addTodo,
     updateTodo,
     toggleTodo,
+    togglePin,
     deleteTodo,
     clearCompleted,
     reorder,
@@ -179,7 +241,10 @@ export function useTodos() {
     toggleSubtask,
     updateSubtask,
     deleteSubtask,
+    exportTodos,
+    importTodos,
   };
 }
 
 export type TodosApi = ReturnType<typeof useTodos>;
+

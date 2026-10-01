@@ -3,17 +3,63 @@ import { useTodos } from "./hooks/useTodos";
 import { TodoForm } from "./components/TodoForm";
 import { TodoList } from "./components/TodoList";
 import { FilterBar } from "./components/FilterBar";
-import type { Filter } from "./types";
+import type { Filter, SortOption } from "./types";
 
 export default function App() {
   const api = useTodos();
   const [filter, setFilter] = useState<Filter>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("All Categories");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("manual");
 
   const visible = useMemo(() => {
-    if (filter === "active") return api.todos.filter((t) => !t.done);
-    if (filter === "done") return api.todos.filter((t) => t.done);
-    return api.todos;
-  }, [api.todos, filter]);
+    let result = [...api.todos];
+
+    // 1. Status Filter
+    if (filter === "active") result = result.filter((t) => !t.done);
+    if (filter === "done") result = result.filter((t) => t.done);
+
+    // 2. Category Filter
+    if (categoryFilter !== "All Categories") {
+      result = result.filter((t) => t.category === categoryFilter);
+    }
+
+    // 3. Search Query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          t.description.toLowerCase().includes(q) ||
+          t.subtasks.some((s) => s.title.toLowerCase().includes(q))
+      );
+    }
+
+    // 4. Sorting & Pinning (Pinned items always come first unless custom sorting is active)
+    result.sort((a, b) => {
+      // Pinned items prioritized
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+
+      if (sortBy === "dueDate") {
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return a.dueDate.localeCompare(b.dueDate);
+      }
+      if (sortBy === "priority") {
+        const pMap = { high: 1, medium: 2, low: 3 };
+        const pA = pMap[a.priority ?? "medium"];
+        const pB = pMap[b.priority ?? "medium"];
+        return pA - pB;
+      }
+      if (sortBy === "createdAt") {
+        return b.createdAt - a.createdAt;
+      }
+      return 0; // Manual dnd order
+    });
+
+    return result;
+  }, [api.todos, filter, categoryFilter, searchQuery, sortBy]);
 
   const progress = api.stats.total === 0 ? 0 : Math.round((api.stats.done / api.stats.total) * 100);
 
@@ -31,8 +77,8 @@ export default function App() {
             Todos, kept minimal.
           </h1>
           <p className="mt-1 max-w-md text-sm text-plum-500">
-            Create, edit, complete, delete. Drag <span aria-hidden="true">⠿</span> to arrange.
-            Sub-tasks compose inside each card.
+            Create, tag, prioritize, edit, complete. Drag <span aria-hidden="true">⠿</span> to arrange.
+            Pin items, assign due dates & categories.
           </p>
         </div>
         <div
@@ -54,19 +100,28 @@ export default function App() {
         <FilterBar
           filter={filter}
           onChange={setFilter}
+          categoryFilter={categoryFilter}
+          onCategoryChange={setCategoryFilter}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
           active={api.stats.active}
           done={api.stats.done}
           total={api.stats.total}
           onClearCompleted={api.clearCompleted}
+          onExport={api.exportTodos}
+          onImport={api.importTodos}
         />
         <TodoList todos={visible} api={api} />
       </main>
 
       <footer className="mt-auto pt-4 text-center text-xs text-plum-400">
         <p>
-          Stored locally in your browser · Keyboard-sortable · Responsive from 360px to desktop
+          Stored locally in your browser · Priority & Due Dates · Drag-and-drop sortable · Responsive
         </p>
       </footer>
     </div>
   );
 }
+

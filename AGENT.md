@@ -1,7 +1,8 @@
 # AGENT.md — Pink Todos
 
 React + Vite + TypeScript + Tailwind CSS v4 todo app. Minimal light-pink theme,
-full CRUD, composable responsive sub-tasks, drag-and-drop reorder (dnd-kit).
+full CRUD, composable responsive sub-tasks, drag-and-drop reorder (dnd-kit),
+priority levels, due dates & status tags, category tags, task pinning, real-time search & sorting, and JSON export/import.
 
 ## Commands
 
@@ -11,18 +12,29 @@ full CRUD, composable responsive sub-tasks, drag-and-drop reorder (dnd-kit).
 
 ## Architecture (composable)
 
-- `src/types.ts` — `Todo`, `SubTask`, `Filter` types + `uid()`
+- `src/types.ts` — `Todo`, `SubTask`, `Filter`, `Priority`, `Category`, `SortOption` types + `uid()`
 - `src/hooks/useTodos.ts` — all state + localStorage persistence (`pink-todos-v1`).
-  CRUD: `addTodo / updateTodo / toggleTodo / deleteTodo / clearCompleted / reorder`
+  CRUD: `addTodo / updateTodo / toggleTodo / deleteTodo / clearCompleted / reorder / togglePin / exportTodos / importTodos`
   + subtask CRUD: `addSubtask / toggleSubtask / updateSubtask / deleteSubtask`
-- `src/components/TodoForm.tsx` — create form (`data-testid: new-todo-title, new-todo-desc, add-todo`)
+- `src/components/TodoForm.tsx` — create form with category, priority, and due date selection (`data-testid: new-todo-title, new-todo-desc, add-todo, category-select-*, priority-select-*, new-todo-due`)
 - `src/components/TodoList.tsx` — dnd-kit sortable list (`data-testid: todo-list, empty-state`)
-- `src/components/TodoItem.tsx` — card with body slot for description + `SubTaskList`
-  (`data-testid: todo-<id>, toggle-<id>, edit-<id>, save-<id>, delete-<id>, drag-<id>, title-<id>, desc-<id>`)
+- `src/components/TodoItem.tsx` — card with category pill, priority badge, due status tag, pin button, and body slot for description + `SubTaskList`
+  (`data-testid: todo-<id>, toggle-<id>, edit-<id>, save-<id>, delete-<id>, drag-<id>, pin-<id>, title-<id>, desc-<id>`)
 - `src/components/SubTaskList.tsx` — **composable + responsive** sub-todo list, usable in any card body
   (`data-testid: new-subtask-<todoId>, add-subtask-<todoId>, subtask-toggle-<subId>, subtask-delete-<subId>`)
-- `src/components/FilterBar.tsx` — All/Active/Done filter + counts (`filter-all|active|done, counts, clear-completed`)
-- `src/App.tsx` — composition root, progress ring (`data-testid: progress`), skip link
+- `src/components/FilterBar.tsx` — Search input, Category filter pills, Sort dropdown, All/Active/Done filter, counts, and JSON Backup Export/Import controls
+  (`data-testid: search-input, sort-select, filter-cat-*, filter-all|active|done, counts, clear-completed, export-json, import-json`)
+- `src/App.tsx` — composition root, search & category filtering logic, progress ring (`data-testid: progress`), skip link
+
+## Features (No Auth / Pure Frontend)
+
+1. **Full CRUD & Subtasks** — Create, edit, toggle, delete todos and composable subtasks.
+2. **Priority Badges** — Assign High, Medium, or Low priority with light-pink/blush themed badges.
+3. **Due Dates & Status Tags** — Due date picker with "Overdue", "Due Today", and formatted date badges.
+4. **Categories / Tags** — Personal, Work, Shopping, Ideas, Health, and General tag pills.
+5. **Pinning Important Tasks** — Pin key todos to the top of the list.
+6. **Real-time Search & Sorting** — Filter todos live by keyword; sort by Manual, Due Date, Priority, or Creation Date.
+7. **JSON Backup Export & Import** — Export todos to `.json` file and import backup files anytime.
 
 ## Theme — pink light (minimal)
 
@@ -48,7 +60,7 @@ Config: `playwright.config.ts` (dev server on :5199, `tests/*.spec.ts`).
 Run:
 
 ```bash
-npx playwright test                 # full suite (CRUD, dnd, responsive, a11y, colours)
+npx playwright test                 # full suite (CRUD, dnd, responsive, a11y, colours, features)
 npx playwright test --headed        # watch it
 npx playwright test -g "crud"       # subset
 npx playwright show-report          # HTML report
@@ -73,3 +85,5 @@ What the suite covers (`tests/todo.spec.ts`):
 5. **Responsiveness** — 390px mobile: no horizontal overflow, form stacks; 1280px desktop layout
 6. **Colours** — computed body bg ≈ blush-100 `#fdf1f5`, card bg ≈ blush-50 `#fff9fb`
 7. **a11y** — labels on all inputs, checkbox names, `todo-list` list, progressbar role, skip link, heading order, focus-visible, no `aria-hidden` focusables
+8. **New Features** — priority badges, category tags, live search filter, task pinning
+
