@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import type { Filter, Category, SortOption } from "../types";
+import type { Filter, SortOption } from "../types";
 
 interface Props {
   filter: Filter;
